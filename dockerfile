@@ -5,8 +5,6 @@ ARG CUDA_VERSION=11.3.1
 ARG ROCM_VERSION=6.0.2
 
 # Copy the minimal context we need to run the generate scripts
-FROM runtime${TARGETARCH}
-
 FROM scratch AS llm-code
 COPY .git .git
 COPY .gitmodules .gitmodules
@@ -117,10 +115,10 @@ ARG CGO_CFLAGS
 RUN go build -trimpath .
 
 # Runtime stages
-FROM ubuntu:22.04 as runtimelinux/amd64
+FROM ubuntu:22.04 as runtime-amd64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
-FROM ubuntu:22.04 as runtimelinux/arm64
+FROM ubuntu:22.04 as runtime-arm64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 
@@ -135,7 +133,7 @@ COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 ENTRYPOINT ["/bin/ollama"]
 CMD ["serve"]
 
-FROM runtime${TARGETARCH}
+FROM runtime-amd64
 EXPOSE 8080
 EXPOSE 443
 ENV OLLAMA_HOST 0.0.0.0
