@@ -118,7 +118,7 @@ RUN go build -trimpath .
 FROM ubuntu:22.04 as runtime-amd64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
-FROM --platform=linux/arm64 ubuntu:22.04 as runtime-arm64
+FROM ubuntu:22.04 as runtime-arm64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 
