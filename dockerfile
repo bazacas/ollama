@@ -5,6 +5,8 @@ ARG CUDA_VERSION=11.3.1
 ARG ROCM_VERSION=6.0.2
 
 # Copy the minimal context we need to run the generate scripts
+FROM runtime${TARGETARCH}
+
 FROM scratch AS llm-code
 COPY .git .git
 COPY .gitmodules .gitmodules
@@ -133,7 +135,7 @@ COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 ENTRYPOINT ["/bin/ollama"]
 CMD ["serve"]
 
-FROM runtime$TARGETARCH
+FROM runtime${TARGETARCH}
 EXPOSE 8080
 EXPOSE 443
 ENV OLLAMA_HOST 0.0.0.0
