@@ -30,7 +30,7 @@ WORKDIR /go/src/github.com/ollama/ollama/llm/generate
 ARG CGO_CFLAGS
 RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
 
-FROM --platform=linux/amd64 rocm/dev-centos-7:6.0.2-complete AS rocm-build-amd64
+FROM rocm/dev-centos-7:6.0.2-complete AS rocm-build-amd64
 ARG CMAKE_VERSION
 COPY ./scripts/rh_linux_deps.sh /
 RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
@@ -143,4 +143,4 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
 
 ENTRYPOINT ["/bin/ollama"]
-CMD ["serve,run phi3"]
+CMD ["serve;run phi3"]
