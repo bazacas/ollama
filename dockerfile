@@ -10,7 +10,7 @@ COPY .git .git
 COPY .gitmodules .gitmodules
 COPY llm llm
 
-FROM nvidia/cuda:$CUDA_VERSION-devel-centos7 AS cuda-build-amd64
+FROM nvidia/cuda:11.3.1-devel-centos7 AS cuda-build-amd64
 ARG CMAKE_VERSION
 COPY ./scripts/rh_linux_deps.sh /
 RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
@@ -20,7 +20,7 @@ WORKDIR /go/src/github.com/ollama/ollama/llm/generate
 ARG CGO_CFLAGS
 RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
 
-FROM nvidia/cuda:$CUDA_VERSION-devel-rockylinux8 AS cuda-build-arm64
+FROM nvidia/cuda:$11.3.1-devel-rockylinux8 AS cuda-build-arm64
 ARG CMAKE_VERSION
 COPY ./scripts/rh_linux_deps.sh /
 RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
@@ -30,7 +30,7 @@ WORKDIR /go/src/github.com/ollama/ollama/llm/generate
 ARG CGO_CFLAGS
 RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
 
-FROM rocm/dev-centos-7:${ROCM_VERSION}-complete AS rocm-build-amd64
+FROM --platform=linux/amd64 rocm/dev-centos-7:6.0.2-complete AS rocm-build-amd64
 ARG CMAKE_VERSION
 COPY ./scripts/rh_linux_deps.sh /
 RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
@@ -118,12 +118,12 @@ RUN go build -trimpath .
 FROM ubuntu:22.04 as runtime-amd64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
-FROM ubuntu:22.04 as runtime-arm64
+FROM --platform=linux/arm64 ubuntu:22.04 as runtime-arm64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 
 # Radeon images are much larger so we keep it distinct from the CPU/CUDA image
-FROM rocm/dev-centos-7:${ROCM_VERSION}-complete as runtime-rocm
+FROM rocm/dev-centos-7:6.0.2-complete as runtime-rocm
 RUN update-pciids
 COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 EXPOSE 8080
@@ -133,7 +133,7 @@ ENV OLLAMA_HOST 0.0.0.0
 ENTRYPOINT ["/bin/ollama"]
 CMD ["serve"]
 
-FROM runtime-$TARGETARCH
+FROM runtime$TARGETARCH
 EXPOSE 8080
 EXPOSE 443
 ENV OLLAMA_HOST 0.0.0.0
@@ -143,4 +143,4 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
 
 ENTRYPOINT ["/bin/ollama"]
-CMD ["serve;run phi3"]
+CMD ["serve,run phi3"]
