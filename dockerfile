@@ -143,4 +143,4 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
 
 ENTRYPOINT ["/bin/ollama"]
-CMD ["serve;run phi3"]
+CMD ["serve && run phi3"]
