@@ -130,8 +130,8 @@ COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 # EXPOSE 443
 # ENV OLLAMA_HOST 0.0.0.0
 
-ENTRYPOINT ["/bin/ollama"]
-CMD ["serve"]
+# ENTRYPOINT ["/bin/ollama"]
+# CMD ["serve"]
 
 FROM runtime-amd64
 EXPOSE 8080
