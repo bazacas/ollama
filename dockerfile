@@ -10,44 +10,44 @@ COPY .git .git
 COPY .gitmodules .gitmodules
 COPY llm llm
 
-FROM nvidia/cuda:11.3.1-devel-centos7 AS cuda-build-amd64
-ARG CMAKE_VERSION
-COPY ./scripts/rh_linux_deps.sh /
-RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
-ENV PATH /opt/rh/devtoolset-10/root/usr/bin:$PATH
-COPY --from=llm-code / /go/src/github.com/ollama/ollama/
-WORKDIR /go/src/github.com/ollama/ollama/llm/generate
-ARG CGO_CFLAGS
-RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
+# FROM nvidia/cuda:11.3.1-devel-centos7 AS cuda-build-amd64
+# ARG CMAKE_VERSION
+# COPY ./scripts/rh_linux_deps.sh /
+# RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
+# ENV PATH /opt/rh/devtoolset-10/root/usr/bin:$PATH
+# COPY --from=llm-code / /go/src/github.com/ollama/ollama/
+# WORKDIR /go/src/github.com/ollama/ollama/llm/generate
+# ARG CGO_CFLAGS
+# RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
 
-FROM nvidia/cuda:$11.3.1-devel-rockylinux8 AS cuda-build-arm64
-ARG CMAKE_VERSION
-COPY ./scripts/rh_linux_deps.sh /
-RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
-ENV PATH /opt/rh/gcc-toolset-10/root/usr/bin:$PATH
-COPY --from=llm-code / /go/src/github.com/ollama/ollama/
-WORKDIR /go/src/github.com/ollama/ollama/llm/generate
-ARG CGO_CFLAGS
-RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
+# FROM nvidia/cuda:$11.3.1-devel-rockylinux8 AS cuda-build-arm64
+# ARG CMAKE_VERSION
+# COPY ./scripts/rh_linux_deps.sh /
+# RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
+# ENV PATH /opt/rh/gcc-toolset-10/root/usr/bin:$PATH
+# COPY --from=llm-code / /go/src/github.com/ollama/ollama/
+# WORKDIR /go/src/github.com/ollama/ollama/llm/generate
+# ARG CGO_CFLAGS
+# RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
 
-FROM rocm/dev-centos-7:6.0.2-complete AS rocm-build-amd64
-ARG CMAKE_VERSION
-COPY ./scripts/rh_linux_deps.sh /
-RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
-ENV PATH /opt/rh/devtoolset-10/root/usr/bin:$PATH
-ENV LIBRARY_PATH /opt/amdgpu/lib64
-COPY --from=llm-code / /go/src/github.com/ollama/ollama/
-WORKDIR /go/src/github.com/ollama/ollama/llm/generate
-ARG CGO_CFLAGS
-ARG AMDGPU_TARGETS
-RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
-RUN mkdir /tmp/scratch && \
-    for dep in $(zcat /go/src/github.com/ollama/ollama/llm/build/linux/x86_64/rocm*/bin/deps.txt.gz) ; do \
-        cp ${dep} /tmp/scratch/ || exit 1 ; \
-    done && \
-    (cd /opt/rocm/lib && tar cf - rocblas/library) | (cd /tmp/scratch/ && tar xf - ) && \
-    mkdir -p /go/src/github.com/ollama/ollama/dist/deps/ && \
-    (cd /tmp/scratch/ && tar czvf /go/src/github.com/ollama/ollama/dist/deps/ollama-linux-amd64-rocm.tgz . )
+# FROM rocm/dev-centos-7:6.0.2-complete AS rocm-build-amd64
+# ARG CMAKE_VERSION
+# COPY ./scripts/rh_linux_deps.sh /
+# RUN CMAKE_VERSION=${CMAKE_VERSION} sh /rh_linux_deps.sh
+# ENV PATH /opt/rh/devtoolset-10/root/usr/bin:$PATH
+# ENV LIBRARY_PATH /opt/amdgpu/lib64
+# COPY --from=llm-code / /go/src/github.com/ollama/ollama/
+# WORKDIR /go/src/github.com/ollama/ollama/llm/generate
+# ARG CGO_CFLAGS
+# ARG AMDGPU_TARGETS
+# RUN OLLAMA_SKIP_STATIC_GENERATE=1 OLLAMA_SKIP_CPU_GENERATE=1 sh gen_linux.sh
+# RUN mkdir /tmp/scratch && \
+#     for dep in $(zcat /go/src/github.com/ollama/ollama/llm/build/linux/x86_64/rocm*/bin/deps.txt.gz) ; do \
+#         cp ${dep} /tmp/scratch/ || exit 1 ; \
+#     done && \
+#     (cd /opt/rocm/lib && tar cf - rocblas/library) | (cd /tmp/scratch/ && tar xf - ) && \
+#     mkdir -p /go/src/github.com/ollama/ollama/dist/deps/ && \
+#     (cd /tmp/scratch/ && tar czvf /go/src/github.com/ollama/ollama/dist/deps/ollama-linux-amd64-rocm.tgz . )
 
 
 FROM centos:7 AS cpu-builder-amd64
@@ -95,9 +95,9 @@ COPY . .
 COPY --from=static-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
 COPY --from=cpu_avx-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
 COPY --from=cpu_avx2-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
-COPY --from=cuda-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
-COPY --from=rocm-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
-COPY --from=rocm-build-amd64 /go/src/github.com/ollama/ollama/dist/deps/ ./dist/deps/
+# COPY --from=cuda-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+# COPY --from=rocm-build-amd64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+# COPY --from=rocm-build-amd64 /go/src/github.com/ollama/ollama/dist/deps/ ./dist/deps/
 ARG GOFLAGS
 ARG CGO_CFLAGS
 RUN go build -trimpath .
@@ -109,7 +109,7 @@ ARG GOLANG_VERSION
 WORKDIR /go/src/github.com/ollama/ollama
 COPY . .
 COPY --from=static-build-arm64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
-COPY --from=cuda-build-arm64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
+# COPY --from=cuda-build-arm64 /go/src/github.com/ollama/ollama/llm/build/linux/ llm/build/linux/
 ARG GOFLAGS
 ARG CGO_CFLAGS
 RUN go build -trimpath .
@@ -122,13 +122,13 @@ FROM ubuntu:22.04 as runtime-arm64
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=build-arm64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
 
-# Radeon images are much larger so we keep it distinct from the CPU/CUDA image
-FROM rocm/dev-centos-7:6.0.2-complete as runtime-rocm
-RUN update-pciids
-COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
-EXPOSE 8080
-EXPOSE 443
-ENV OLLAMA_HOST 0.0.0.0
+# # Radeon images are much larger so we keep it distinct from the CPU/CUDA image
+# FROM rocm/dev-centos-7:6.0.2-complete as runtime-rocm
+# RUN update-pciids
+# COPY --from=build-amd64 /go/src/github.com/ollama/ollama/ollama /bin/ollama
+# EXPOSE 8080
+# EXPOSE 443
+# ENV OLLAMA_HOST 0.0.0.0
 
 ENTRYPOINT ["/bin/ollama"]
 CMD ["serve"]
@@ -138,7 +138,7 @@ EXPOSE 8080
 EXPOSE 443
 ENV OLLAMA_HOST 0.0.0.0
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+# ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_VISIBLE_DEVICES=all
 
